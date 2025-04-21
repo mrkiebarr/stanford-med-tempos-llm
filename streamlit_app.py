@@ -67,8 +67,8 @@ with st.sidebar:
     st.write("For more information on TEMPOS, visit the [Stanford Medicine website](https://med.stanford.edu/psychiatry/special-initiatives/mediamh/resources/tempos.html).")
 
 # ---- MAIN PANEL ----
-st.title("📄 TEMPOS Writing Evaluator")
-st.write("Paste or write your response below. The system will provide a breakdown using the **TEMPOS framework**:")
+st.title("📄 TEMPOS Insight")
+st.write("Paste or write your response below. We will carefully analyze and provide feedback based on the **TEMPOS framework**:")
 
 # ---- USER INPUT ----
 user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
@@ -81,7 +81,7 @@ if st.button("Evaluate"):
         prompt = f"""
 
         You are a sympathetic and professional expert.
-        Evaluate this user-input text using the TEMPOS framework.
+        Evaluate this user-input text using the TEMPOS Framework.
 
         The Tempos criteria:
         1. How does the report frame the suicide?
