@@ -70,7 +70,7 @@ if st.button("Evaluate"):
         prompt = f"""
 
         You are a sympathetic and professional expert on mental health journalism.
-        Evaluate this user-input text using the TEMPOS Framework derived from https://tempos.su.domains/, identifying the rationale behind every single score for each criterion for accurate rating.
+        Evaluate this user-input text using the TEMPOS criteria detailed scoring breakdown below, then identify the rationale behind every single score for each criterion for accurate rating.
 
         The Tempos criteria:
         1. How does the report frame the suicide?
