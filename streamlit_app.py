@@ -50,13 +50,14 @@ with st.sidebar:
     st.error("0: Harmful messaging, non-adherence to guidelines")
     
     st.markdown("---")
-    st.subheader("☎️ Helpful Resources")
-    st.write("- Suicide and Crisis Lifeline: Call or Text **988**; Chat at [988lifeline.org](https://988lifeline.org/)")
+    st.subheader("☎️ Suicide and Crisis Lifeline")
+    st.write("- Call/ Text: **988**")
+    st.write("- Chat or more: [988lifeline.org](https://988lifeline.org/)")
     st.subheader("☎️ Additional Resources")
-    st.write("- AFSP: [afsp.org](https://afsp.org/)")
-    st.write("- NIMH: [nimh.nih.org](https://nimh.nih.org/)")
-    st.write("- SPRC: [sprc.org](https://sprc.org/)")
-    st.write("- AAS: [aas.org](https://aas.org/)")
+    st.write("- [American Foundation for Suicide Prevention](https://afsp.org/)")
+    st.write("- [National Institute of Mental Health](https://nimh.nih.gov/)")
+    st.write("- [Suicide Prevention Resources Center](https://sprc.org/)")
+    st.write("- [American Association of Suicidology](https://suicidology.org/)")
 
 
 # ---- MAIN PANEL ----
