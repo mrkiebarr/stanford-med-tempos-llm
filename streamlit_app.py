@@ -8,21 +8,20 @@ st.set_page_config(page_title="TEMPOS Evaluator", layout="wide")
 client = OpenAI(api_key=st.secrets["openai_api_key"])
 
 # ---- CSS STYLING ----
-st.markdown("""
-    <style>
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-        .sidebar .sidebar-content {
-            background-color: #f0f4f8;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# ---- CSS Styling for Logos ----
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.image("sm_howl_looks_logo_02.png", use_container_width=True)
+
+with col2:
+    st.image("county of santa clara.png", use_container_width=True)
 
 # ---- SIDEBAR: TEMPOS INFO ----
 
-st.logo("sm_howl_looks_logo_02.png", size="large")
+#st.logo("sm_howl_looks_logo_02.png", size="large")
+
+
 with st.sidebar:
    
     st.title("TEMPOS Framework")
@@ -36,7 +35,7 @@ with st.sidebar:
     st.info('3. Does the report use appropriate/non-stigmatizing language?')
     st.info('4. How does the report describe the suicide method and scene?')
     st.info('5. How does the report describe the suicide note?')
-    st.info('6. What visual content does the report include? [Disclaimer: the AI model is not trained to analyze visual content; therefore, this criterion automatically receives a score of 0 which is not factored in the overall average score.]')
+    st.info('6. What visual content does the report include? [Disclaimer: the AI model is not trained to analyze visual content; therefore, this criterion automatically receives an N/A which is not factored in the overall average score.]')
     st.info('7. How does the report describe risk factors and reasons for suicide?')
     st.info('8. Does the report use sensational language?')
     st.info('9. Does the report glamorize suicide?')
@@ -52,12 +51,18 @@ with st.sidebar:
     
     st.markdown("---")
     st.subheader("☎️ Helpful Resources")
-    st.write("- Suicide and Crisis Lifeline: 988")
-    st.write("- Stanford Counseling and Psychological Services (CAPS): 650.723.3785")
+    st.write("- Suicide and Crisis Lifeline: Call or Text **988**; Chat at [988lifeline.org](https://988lifeline.org/)")
+    st.subheader("☎️ Additional Resources")
+    st.write("- AFSP: [afsp.org](https://afsp.org/)")
+    st.write("- NIMH: [nimh.nih.org](https://nimh.nih.org/)")
+    st.write("- SPRC: [sprc.org](https://sprc.org/)")
+    st.write("- AAS: [aas.org](https://aas.org/)")
+
 
 # ---- MAIN PANEL ----
 st.title("📄 TEMPOS Insight")
-st.write("Paste or write your text below. We will carefully analyze and provide feedback based on the **TEMPOS framework**:")
+st.write("**Tool for Evaluating Media Portrayals of Suicide**")
+st.caption("Paste or write your text below. We will carefully analyze and provide feedback based on the **TEMPOS Framework**:")
 
 # ---- USER INPUT ----
 user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
@@ -85,19 +90,18 @@ if st.button("Evaluate"):
             - 2: Uses appropriate/non-stigmatizing language that is more neutral and treats suicide similarly to other causes of death (e.g. died by suicide)
             - 1: Uses a mix of inappropriate and appropriate language.
             - 0: Uses inappropriate / stigmatizing language that implies criminality (e.g. committed), judgment, or positive connotations (e.g. successful attempt).
-
         4. How does the report describe the suicide method and scene?
             - 2: Reports the death as a suicide but keeps information general and does not mention method.
             - 1: Briefly mentions suicide method (e.g. asphyxiation, overdose) but does not include explicit details about the method used or the scene of the death.
             - 0: Describes or depicts, in a detailed manner, the method and/or location of the suicide; ‘sets the scene’ by including information about what was found at the scene of the death, how the person was found, or the type of object used.
+            - N/A : Article is not about a speicfic person's suicide (Carefully consider between giving a numerical score or N/A)
         5. How does the report describe the suicide note? 
             - 2: Does not mention a note or its contents; states that no note was found.
             - 1: Reports that a note was found but does not include any content from the note.
             - 0: Shares specific content drawn directly from a suicide note.
-        6. What visual content does the report include? [This criterion should automatically receive a zero because visual content is not included in the text input. Do not include this in the denominator for overall calculation]
-            - 2: Uses visual content of the person who died from school/work/ family or photo unrelated to suicide.
-            - 1: Includes visual content of grieving/sad individuals, memorials, or funerals.
-            - 0: Includes any visual content (e.g. photos / videos) of the location or method of death.
+            - N/A : Article is not about a speicfic person's suicide. (Carefully consider between giving a numerical score or N/A)
+        6. What visual content does the report include? [This criterion should automatically receive the word N/A because visual content is not included in the text input. Do not include this in the denominator for overall calculation.]
+            - Say "N/A; our model does not assess visual content."     
         7. How does the report describe risk factors and reasons for suicide?
             - 2: Acknowledges (in the body of the article or in a sidebar) the complexity of suicide and describes risk factors (e.g. mental illness, economic hardship, family issues) that give suicide context.
             - 1: Does not speculate about reasons for death but does not include information about risk factors.
@@ -148,4 +152,4 @@ if st.button("Evaluate"):
 st.markdown("---")
 
 st.markdown("### 🧠 Mental Health Support")
-st.write("Please reach out to your local mental health service provider or refer to the Department of Health Care Services [Mental Health Services Division](https://www.dhcs.ca.gov/services/Pages/MentalHealthPrograms-Svcs.aspx) for a list of helpful resources.")
+st.write("Please reach out to your local mental health service provider or refer to the [Substance Abuse and Mental Health Services Adminsitration (SAMHSA)](https://www.samhsa.gov/find-help) for a list of helpful resources.")
