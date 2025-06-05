@@ -8,7 +8,7 @@ st.set_page_config(page_title="TEMPOS Evaluator", layout="wide")
 client = OpenAI(api_key=st.secrets["openai_api_key"])
 
 # ---- CSS STYLING ----
-# ---- CSS Styling for Logos ----
+
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -19,7 +19,7 @@ with col2:
 
 # ---- SIDEBAR: TEMPOS INFO ----
 
-#st.logo("sm_howl_looks_logo_02.png", size="large")
+#st.logo("Developers: Mark David Barranda and Carol Li", size="large")
 
 
 with st.sidebar:
@@ -153,3 +153,10 @@ st.markdown("---")
 
 st.markdown("### 🧠 Mental Health Support")
 st.write("Please reach out to your local mental health service provider or refer to the [Substance Abuse and Mental Health Services Adminsitration (SAMHSA)](https://www.samhsa.gov/find-help) for a list of helpful resources.")
+
+# ----- ACKNOWLEDGEMENT --------
+
+st.markdown("""
+---
+<small>Developers: Mark David Barranda & Carol Li, Data Science Society @ UC Berkeley</small>
+""", unsafe_allow_html=True)
