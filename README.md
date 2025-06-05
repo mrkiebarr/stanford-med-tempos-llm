@@ -1,19 +1,7 @@
-# 🎈 Blank app template
+# 🎈 TEMPOS Insight
 
-A simple Streamlit app template for you to modify!
+TEMPOS stands for Tool for Evaluating Media Portrayals of Suicide to assist journalists in reporting suicide related cases that adheres to the framework.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+This project was developed by Mark David Barranda and Carol Li in partnership with Stanford Medicine and County of Santa Clara Behavioral Health Services.
 
-### How to run it on your own machine
 
-1. Install the requirements
-
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-2. Run the app
-
-   ```
-   $ streamlit run streamlit_app.py
-   ```
