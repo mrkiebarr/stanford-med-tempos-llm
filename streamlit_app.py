@@ -62,7 +62,7 @@ with st.sidebar:
 
 # ---- MAIN PANEL ----
 st.title("📄 TEMPOS (Tool for Evaluating Media Portrayals of Suicide)")
-st.caption("Paste or write your text below. We will carefully analyze and provide feedback based on the **TEMPOS Framework**:")
+st.caption("Paste or write your text below. We will carefully analyze and provide feedback based on the **TEMPOS Framework**.")
 
 # ---- USER INPUT ----
 user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
