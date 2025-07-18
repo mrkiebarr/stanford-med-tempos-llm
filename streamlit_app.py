@@ -56,13 +56,12 @@ with st.sidebar:
     st.subheader("☎️ Additional Resources")
     st.write("- [American Foundation for Suicide Prevention](https://afsp.org/)")
     st.write("- [National Institute of Mental Health](https://nimh.nih.gov/)")
-    st.write("- [Suicide Prevention Resources Center](https://sprc.org/)")
+    st.write("- [Suicide Prevention Resource Center](https://sprc.org/)")
     st.write("- [American Association of Suicidology](https://suicidology.org/)")
 
 
 # ---- MAIN PANEL ----
-st.title("📄 TEMPOS Insight")
-st.write("**Tool for Evaluating Media Portrayals of Suicide**")
+st.title("📄 TEMPOS (Tool for Evaluating Media Portrayals of Suicide)")
 st.caption("Paste or write your text below. We will carefully analyze and provide feedback based on the **TEMPOS Framework**:")
 
 # ---- USER INPUT ----
