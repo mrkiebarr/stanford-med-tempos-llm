@@ -126,8 +126,7 @@ if st.button("Evaluate"):
 
         Your output should be as follows:
 
-        - Provide a numerical score followed by a one sentence evaluation for each of the 10 TEMPOS criteria
-        - Conclude with only the average score (no calculation shown).
+        - Provide a numerical score followed by a one sentence evaluation for each criterion
 
         - On the next line, say "What went well: " then highlight specific examples or phrases from the text to justify what went well, if it appplies.
         - Lastly, say "Suggestions for improvement: " then suggest ways to improve on relevant criteria.
