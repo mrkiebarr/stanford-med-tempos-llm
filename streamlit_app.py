@@ -105,6 +105,12 @@ with st.sidebar:
     st.error("0: Harmful messaging, non-adherence to guidelines")
 
     st.markdown("---")
+    st.title("Why Retrieval Level Matters")
+    st.info("k=1: The LLM only sees the single best-matching chunk. Very precise, but can miss context.")
+    st.info("k=3-5: Balances precision with extra context")
+    st.info("k=10+: Pulls in more chunks, but risks adding irrelevant or noisy information.")
+
+    st.markdown("---")
     st.subheader("☎️ Suicide and Crisis Lifeline")
     st.write("- Call/ Text: **988**")
     st.write("- Chat or more: [988lifeline.org](https://988lifeline.org/)")
@@ -118,10 +124,10 @@ with st.sidebar:
 # MAIN
 # =========================
 st.title("📄 TEMPOS (Tool for Evaluating Media Portrayals of Suicide)")
-st.caption("Paste or write your text below. The evaluation will be grounded in your CSV knowledge base via Pinecone (RAG).")
+st.caption("Select a retrieval level below. Then paste or write your text in the text area. The evaluation will be grounded in existing reports carefully assessed by human experts. (For more information on why retrieval level matters, please refer to the sidebar.")
 
 # Controls
-k = st.sidebar.slider("Top‑K retrieved snippets", 1, 10, 4)
+k = st.slider("Retrieval Level", 1, 10, 4)
 user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
 
 if st.button("Evaluate"):
