@@ -106,9 +106,9 @@ with st.sidebar:
 
     st.markdown("---")
     st.title("Why Retrieval Level Matters")
-    st.info("k=1: The LLM only sees the single best-matching chunk. Very precise, but can miss context.")
-    st.info("k=3-5: Balances precision with extra context")
-    st.info("k=10+: Pulls in more chunks, but risks adding irrelevant or noisy information.")
+    st.info("Level 1 (k=1): The system only looks at the single most relevant part of one article. Very focused, but it might miss important context from other parts of that article or from other articles.")
+    st.info("Level 3–5 (k=3–5): The system looks at a few different parts, which might all come from the same article or from several different articles. This usually gives the best balance—enough context without too much extra.")
+    st.info("Level 10+ (k=10+): The system pulls in many parts from across multiple articles. This can help with complex topics, but it also risks bringing in sections that aren’t really relevant.")
 
     st.markdown("---")
     st.subheader("☎️ Suicide and Crisis Lifeline")
@@ -201,7 +201,7 @@ If the CSV context does not contain information for a criterion, say so explicit
         # 3) Call GPT with the augmented prompt
         with st.spinner("Analyzing your report..."):
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-5",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
             )
