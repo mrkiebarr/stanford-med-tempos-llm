@@ -186,7 +186,7 @@ if st.button("Evaluate"):
     # Retrieve supporting context from Pinecone
     with st.spinner("Retrieving relevant context from your CSV index..."):
         try:
-            context, matches = retrieve_context(index, embedder, NAMESPACE, user_input, k=k, max_chars=2500)
+            context, matches = retrieve_context(index, embedder, NAMESPACE, user_input, k=5, max_chars=2500)
             exemplar_block = build_exemplar_block(matches, max_examples=3)
         except Exception as e:
             st.error(f"Pinecone retrieval error: {e}")
@@ -271,29 +271,30 @@ adhere to their decision boundaries (human-coded labels) and prefer the stricter
         st.error(f"OpenAI error: {e}")
         st.stop()
 
-    # Results & sources
-    if "analysis" in st.session_state:
-        st.markdown("### Feedback")
-        st.markdown(st.session_state["analysis"])
 
-        with st.expander("See retrieved CSV context"):
-            if not matches:
-                st.write("No context retrieved.")
-            else:
-                for i, m in enumerate(matches, 1):
-                    meta = m.get("metadata", {}) or {}
-                    st.markdown(
-                        f"**Snippet {i}** • score: {m.get('score', 0):.4f} • "
-                        f"row_index: {meta.get('row_index','?')} • chunk: {meta.get('chunk_id','?')}"
-                    )
-                    if meta.get("title"):
-                        st.write(f"**Title:** {meta['title']}")
-                    if meta.get("link"):
-                        st.markdown(f"[Open Source Link]({meta['link']})")
-                    scores = get_scores_from_meta(meta)
-                    if scores:
-                        st.write("**Human TEMPOS scores:**", scores)
-                    st.code((meta.get("preview") or "")[:800])
+    # Results & sources
+    # if "analysis" in st.session_state:
+    #    st.markdown("### Feedback")
+     #   st.markdown(st.session_state["analysis"])
+#
+ #       with st.expander("See retrieved CSV context"):
+  #          if not matches:
+   #             st.write("No context retrieved.")
+    #        else:
+     #           for i, m in enumerate(matches, 1):
+    #                meta = m.get("metadata", {}) or {}
+     #               st.markdown(
+     #                   f"**Snippet {i}** • score: {m.get('score', 0):.4f} • "
+     #                   f"row_index: {meta.get('row_index','?')} • chunk: {meta.get('chunk_id','?')}"
+     #               )
+     #               if meta.get("title"):
+     #                   st.write(f"**Title:** {meta['title']}")
+     #               if meta.get("link"):
+     #                   st.markdown(f"[Open Source Link]({meta['link']})")
+     #               scores = get_scores_from_meta(meta)
+     #               if scores:
+     #                   st.write("**Human TEMPOS scores:**", scores)
+     #               st.code((meta.get("preview") or "")[:800])
 
 # Footer
 st.markdown("---")
