@@ -36,10 +36,10 @@ def retrieve_context(query: str, k: int = 4, max_chars: int = 2500):
     Embed the user query (768-dim), hit Pinecone, and return a compact context block
     plus the raw matches for display.
     """
-    # 1) Embed query
+    # Embed query
     qvec = embedder.encode([query])[0].tolist()
 
-    # 2) Query Pinecone (top_k with metadata)
+    # Query Pinecone (top_k with metadata)
     res = index.query(
         namespace=NAMESPACE,
         vector=qvec,
@@ -47,7 +47,7 @@ def retrieve_context(query: str, k: int = 4, max_chars: int = 2500):
         include_metadata=True
     )
 
-    # 3) Build a trimmed context to avoid token bloat
+    # Build a trimmed context to avoid token bloat
     snippets, matches = [], res.get("matches", [])
     total = 0
     for m in matches:
@@ -108,7 +108,7 @@ with st.sidebar:
     st.title("Why Retrieval Level Matters")
     st.info("Level 1 (k=1): The system only looks at the single most relevant part of one article. Very focused, but it might miss important context from other parts of that article or from other articles.")
     st.info("Level 3–5 (k=3–5): The system looks at a few different parts, which might all come from the same article or from several different articles. This usually gives the best balance—enough context without too much extra.")
-    st.info("Level 10+ (k=10+): The system pulls in many parts from across multiple articles. This can help with complex topics, but it also risks bringing in sections that aren’t really relevant.")
+    st.info("Level 6+ (k=6+): The system pulls in many parts from across multiple articles. This can help with complex topics, but it also risks bringing in sections that aren’t really relevant.")
 
     st.markdown("---")
     st.subheader("☎️ Suicide and Crisis Lifeline")
@@ -124,21 +124,21 @@ with st.sidebar:
 # MAIN
 # =========================
 st.title("📄 TEMPOS (Tool for Evaluating Media Portrayals of Suicide)")
-st.caption("Select a retrieval level below. Then paste or write your text in the text area. The evaluation will be grounded in existing reports carefully assessed by human experts. (For more information on why retrieval level matters, please refer to the sidebar.")
+st.caption("Select a retrieval level below. Then paste or write your text in the text area. The evaluation will be grounded in existing reports carefully assessed by human experts. (For more information on why retrieval level matters, please refer to the sidebar.)")
 
 # Controls
-k = st.slider("Retrieval Level", 1, 10, 4)
+k = st.slider("Retrieval Level", 1, 8, 4)
 user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
 
 if st.button("Evaluate"):
     if not user_input.strip():
         st.warning("Please enter some text to evaluate.")
     else:
-        # 1) Retrieve supporting context from Pinecone
+        # Retrieve supporting context from Pinecone
         with st.spinner("Retrieving relevant context from your CSV index..."):
             context, matches = retrieve_context(user_input, k=k, max_chars=2500)
 
-        # 2) Build augmented prompt: your rubric + retrieved context + user text
+        # Build augmented prompt: your rubric + retrieved context + user text
         prompt = f"""
 You are a sympathetic and professional expert on mental health journalism.
 Evaluate the user-input text using the TEMPOS criteria. Use the CSV context to ground your evaluation.
@@ -198,16 +198,25 @@ If the CSV context does not contain information for a criterion, say so explicit
 - Then, "Suggestions for improvement:" with concrete, actionable guidance tied to the criteria.
 """
 
-        # 3) Call GPT with the augmented prompt
+         
+        # Call GPT with the augmented prompt
+        #   Note: Updating the model might result in changes in parameter constraints 
+        #   (e.g. GPT-5 only accepts a value of 1 for temperature)
+        #   Temperature parameter controls how "creative" or random the GPT model's responses are.
+        #        - 0: deterministic, predictable, consistent
+        #        - 0.5: balance between creativity and reliability
+        #        - 0.7 - 1.0: creative, exploratory, unpredictable (varying results in scores)
+
         with st.spinner("Analyzing your report..."):
             response = client.chat.completions.create(
-                model="gpt-5",
+                model="gpt-4",
+                max_completion_tokens=5000,   # cap output
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
+                temperature=0.3,
             )
             st.session_state["analysis"] = response.choices[0].message.content
 
-        # 4) Show results and sources
+        # Show results and sources
         if "analysis" in st.session_state:
             st.markdown("### Feedback")
             st.markdown(st.session_state["analysis"])
