@@ -45,7 +45,7 @@ def get_clients():
                 st.session_state["pc_index"] = index
                 st.session_state["embedder"] = embedder
                 st.session_state["namespace"] = namespace
-                status.update(label="Retrieval ready.", state="complete")
+                
             except Exception as e:
                 status.update(label="Failed to initialize.", state="error")
                 st.error(f"Setup error: {e}")
@@ -98,7 +98,7 @@ def build_exemplar_block(matches, max_examples: int = 3, snippet_chars: int = 60
 # =========================
 # RETRIEVAL
 # =========================
-def retrieve_context(index, embedder, namespace, query: str, k: int = 4, max_chars: int = 2500):
+def retrieve_context(index, embedder, namespace, query: str, k: int = 5, max_chars: int = 2500):
     """Embed query, hit Pinecone, and return compact context + raw matches."""
     qvec = embedder.encode([query])[0].tolist()
     res = index.query(namespace=namespace, vector=qvec, top_k=k, include_metadata=True)
@@ -117,18 +117,6 @@ def retrieve_context(index, embedder, namespace, query: str, k: int = 4, max_cha
             break
     return "\n\n---\n\n".join(snippets), matches
 
-# =========================
-# HEADER / BRANDING
-# =========================
-col1, col2 = st.columns([1, 1])
-logo1 = Path("sm_howl_looks_logo_02.png")
-logo2 = Path("county of santa clara.png")
-with col1:
-    if logo1.exists():
-        st.image(str(logo1), use_container_width=True)
-with col2:
-    if logo2.exists():
-        st.image(str(logo2), use_container_width=True)
 
 # =========================
 # SIDEBAR (INFO)
@@ -138,19 +126,22 @@ with st.sidebar:
     st.write(
         "TEMPOS, or Tool for Evaluating Media Portrayals of Suicide, helps assess adherence to "
         "[Recommendations for Reporting on Suicide](https://reportingonsuicide.org/). "
-        "This tool analyzes user text and provides real-time scoring and feedback."
+        "This tool analyzes user text and provides real-time scoring and feedback grounded on human expert-based assessement."
     )
-    st.write("Assessment criteria:")
-    st.info('1. How does the report frame the suicide?')
-    st.info('2. Does the report include factual and non-speculative information about suicide?')
-    st.info('3. Does the report use appropriate/non-stigmatizing language?')
-    st.info('4. How does the report describe the suicide method and scene?')
-    st.info('5. How does the report describe the suicide note?')
-    st.info('6. What visual content does the report include? (N/A in this text-only tool)')
-    st.info('7. How does the report describe risk factors and reasons for suicide?')
-    st.info('8. Does the report use sensational language?')
-    st.info('9. Does the report glamorize suicide?')
-    st.info('10. Does the report include suicide prevention and mental health resources?')
+
+    st.info(
+        "[Assessment criteria](https://med.stanford.edu/content/dam/sm/psychiatry/documents/initiatives/mediamh/TEMPOS%20Apr23.pdf):\n"
+        "1. How does the report frame the suicide?\n"
+        "2. Does the report include factual and non-speculative information about suicide?\n"
+        "3. Does the report use appropriate/non-stigmatizing language?\n"
+        "4. How does the report describe the suicide method and scene?\n"
+        "5. How does the report describe the suicide note?\n"
+        "6. What visual content does the report include? (N/A in this text-only tool)\n"
+        "7. How does the report describe risk factors and reasons for suicide?\n"
+        "8. Does the report use sensational language?\n"
+        "9. Does the report glamorize suicide?\n"
+        "10. Does the report include suicide prevention and mental health resources?"
+    )
 
     st.markdown("---")
     st.title("TEMPOS Scoring")
@@ -158,11 +149,12 @@ with st.sidebar:
     st.warning("1: Mixed messaging, partial adherence")
     st.error("0: Harmful messaging, non-adherence to guidelines")
 
-    st.markdown("---")
-    st.title("Why Retrieval Level Matters")
-    st.info("k=1: very focused; may miss context.")
-    st.info("k=3–5: best balance (recommended).")
-    st.info("k=6+: broader; may add noise and tokens.")
+    
+    #st.markdown("---")
+    #st.title("Why Retrieval Level Matters")
+    #st.info("k=1: very focused; may miss context.\n")
+    #st.info("k=3–5: best balance (recommended).")
+    #st.info("k=6+: broader; may add noise and tokens.")
 
     st.markdown("---")
     st.subheader("☎️ Suicide and Crisis Lifeline")
@@ -178,13 +170,10 @@ with st.sidebar:
 # MAIN
 # =========================
 st.title("📄 TEMPOS (Tool for Evaluating Media Portrayals of Suicide)")
-st.caption(
-    "Select a retrieval level, paste your text, and we’ll score it with the TEMPOS rubric, "
-    "grounded by similar, human‑coded articles."
-)
 
-k = st.slider("Retrieval Level (top‑k)", 1, 8, 4)
-user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
+# k = st.slider("Retrieval Level (top‑k)", 1, 8, 4)
+
+user_input = st.text_area("✍️ Paste or type your text", height=250, placeholder="Write your paragraph here...")
 
 if st.button("Evaluate"):
     if not user_input.strip():
