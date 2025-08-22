@@ -1,53 +1,108 @@
+import os
+from pathlib import Path
 import streamlit as st
 from openai import OpenAI
 from pinecone import Pinecone
 from sentence_transformers import SentenceTransformer
 
 # =========================
-# PAGE & GLOBAL CLIENTS
+# PAGE & OPENAI CLIENT
 # =========================
 st.set_page_config(page_title="TEMPOS Evaluator", layout="wide")
 
-# OpenAI client for GPT calls
+if "openai_api_key" not in st.secrets:
+    st.error('Missing "openai_api_key" in secrets. Add it to .streamlit/secrets.toml or deployment settings.')
+    st.stop()
+
 client = OpenAI(api_key=st.secrets["openai_api_key"])
 
-@st.cache_resource
+# =========================
+# SAFE / LAZY INIT
+# =========================
+@st.cache_resource(show_spinner=False)
 def init_retrieval_clients():
-    """
-    Initialize Pinecone (v3 SDK) and the SAME embedder you used in Colab:
-    sentence-transformers/all-mpnet-base-v2 (768-dim).
-    """
-    # Pinecone serverless: connect via host URL from console
+    """Create Pinecone index client + local embedder (lazy, cached)."""
+    # Secrets checks
+    missing = [k for k in ("pinecone_api_key", "pinecone_index_host") if k not in st.secrets]
+    if missing:
+        raise RuntimeError(f"Missing secrets: {missing}. Add them to secrets.")
+
     pc = Pinecone(api_key=st.secrets["pinecone_api_key"])
     index = pc.Index(host=st.secrets["pinecone_index_host"])
 
-    # Use the SAME model as ingestion (Colab)
+    # Use the SAME model as ingestion
     embedder = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
 
-    # Namespace used during ingestion
     namespace = st.secrets.get("pinecone_namespace", "tempos")
-
     return index, embedder, namespace
 
-index, embedder, NAMESPACE = init_retrieval_clients()
+def get_clients():
+    """Initialize once, on demand, with user-visible status and errors."""
+    if "pc_index" not in st.session_state:
+        with st.status("Loading retrieval engines…", expanded=True) as status:
+            try:
+                index, embedder, namespace = init_retrieval_clients()
+                st.session_state["pc_index"] = index
+                st.session_state["embedder"] = embedder
+                st.session_state["namespace"] = namespace
+                status.update(label="Retrieval ready.", state="complete")
+            except Exception as e:
+                status.update(label="Failed to initialize.", state="error")
+                st.error(f"Setup error: {e}")
+                st.stop()
+    return st.session_state["pc_index"], st.session_state["embedder"], st.session_state["namespace"]
 
-def retrieve_context(query: str, k: int = 4, max_chars: int = 2500):
-    """
-    Embed the user query (768-dim), hit Pinecone, and return a compact context block
-    plus the raw matches for display.
-    """
-    # Embed query
+# =========================
+# EXEMPLAR HELPERS
+# =========================
+CRITERION_LABEL = {
+    "1": "Framing of Suicide",
+    "2": "Factual & Non‑Speculative Information",
+    "3": "Appropriate / Non‑stigmatizing Language",
+    "4": "Method / Scene",
+    "5": "Suicide Note",
+    "6": "Visual Content",
+    "7": "Reasons & Risk Factors",
+    "8": "Sensationalism",
+    "9": "Glamorizing Suicide",
+    "10": "Prevention & MH Resources",
+}
+
+def get_scores_from_meta(md: dict) -> dict:
+    """Read flattened scores score_1..score_10 from metadata."""
+    out = {}
+    for i in range(1, 11):
+        key = f"score_{i}"
+        if key in md:
+            out[str(i)] = md[key]  # 0/1/2 or "N/A"
+    return out
+
+def build_exemplar_block(matches, max_examples: int = 3, snippet_chars: int = 600) -> str:
+    """Turn matches into few-shot exemplars using flattened scores."""
+    exemplars = []
+    for m in matches[:max_examples]:
+        md = (m.get("metadata") or {})
+        scores = get_scores_from_meta(md)
+        preview = (md.get("preview") or "").strip()[:snippet_chars]
+        title = (md.get("title") or "").strip()
+        if not scores or not preview:
+            continue
+        exemplars.append(
+            f"[EXEMPLAR]\n"
+            f"Title: {title or 'Untitled'}\n"
+            f"Human TEMPOS scores: {scores}\n"
+            f"Excerpt:\n{preview}"
+        )
+    return "\n\n".join(exemplars)
+
+# =========================
+# RETRIEVAL
+# =========================
+def retrieve_context(index, embedder, namespace, query: str, k: int = 4, max_chars: int = 2500):
+    """Embed query, hit Pinecone, and return compact context + raw matches."""
     qvec = embedder.encode([query])[0].tolist()
+    res = index.query(namespace=namespace, vector=qvec, top_k=k, include_metadata=True)
 
-    # Query Pinecone (top_k with metadata)
-    res = index.query(
-        namespace=NAMESPACE,
-        vector=qvec,
-        top_k=k,
-        include_metadata=True
-    )
-
-    # Build a trimmed context to avoid token bloat
     snippets, matches = [], res.get("matches", [])
     total = 0
     for m in matches:
@@ -60,31 +115,30 @@ def retrieve_context(query: str, k: int = 4, max_chars: int = 2500):
         total += len(piece)
         if total >= max_chars:
             break
-
     return "\n\n---\n\n".join(snippets), matches
-
 
 # =========================
 # HEADER / BRANDING
 # =========================
 col1, col2 = st.columns([1, 1])
+logo1 = Path("sm_howl_looks_logo_02.png")
+logo2 = Path("county of santa clara.png")
 with col1:
-    st.image("sm_howl_looks_logo_02.png", use_container_width=True)
+    if logo1.exists():
+        st.image(str(logo1), use_container_width=True)
 with col2:
-    st.image("county of santa clara.png", use_container_width=True)
+    if logo2.exists():
+        st.image(str(logo2), use_container_width=True)
 
 # =========================
 # SIDEBAR (INFO)
 # =========================
 with st.sidebar:
     st.title("TEMPOS Framework")
-
     st.write(
-        "TEMPOS, or Tool for Evaluating Media Portrayals of Suicide, serves as a guideline for journalists "
-        "to monitor adherence to the "
+        "TEMPOS, or Tool for Evaluating Media Portrayals of Suicide, helps assess adherence to "
         "[Recommendations for Reporting on Suicide](https://reportingonsuicide.org/). "
-        "This dashboard leverages a TEMPOS-aligned AI model to analyze user text and provide real-time scoring "
-        "and feedback."
+        "This tool analyzes user text and provides real-time scoring and feedback."
     )
     st.write("Assessment criteria:")
     st.info('1. How does the report frame the suicide?')
@@ -106,43 +160,58 @@ with st.sidebar:
 
     st.markdown("---")
     st.title("Why Retrieval Level Matters")
-    st.info("Level 1 (k=1): The system only looks at the single most relevant part of one article. Very focused, but it might miss important context from other parts of that article or from other articles.")
-    st.info("Level 3–5 (k=3–5): The system looks at a few different parts, which might all come from the same article or from several different articles. This usually gives the best balance—enough context without too much extra.")
-    st.info("Level 6+ (k=6+): The system pulls in many parts from across multiple articles. This can help with complex topics, but it also risks bringing in sections that aren’t really relevant.")
+    st.info("k=1: very focused; may miss context.")
+    st.info("k=3–5: best balance (recommended).")
+    st.info("k=6+: broader; may add noise and tokens.")
 
     st.markdown("---")
     st.subheader("☎️ Suicide and Crisis Lifeline")
     st.write("- Call/ Text: **988**")
     st.write("- Chat or more: [988lifeline.org](https://988lifeline.org/)")
     st.subheader("☎️ Additional Resources")
-    st.write("- [American Foundation for Suicide Prevention](https://afsp.org/)")
-    st.write("- [National Institute of Mental Health](https://nimh.nih.gov/)")
-    st.write("- [Suicide Prevention Resource Center](https://sprc.org/)")
-    st.write("- [American Association of Suicidology](https://suicidology.org/)")
+    st.write("- [AFSP](https://afsp.org/)")
+    st.write("- [NIMH](https://nimh.nih.gov/)")
+    st.write("- [SPRC](https://sprc.org/)")
+    st.write("- [AAS](https://suicidology.org/)")
 
 # =========================
 # MAIN
 # =========================
 st.title("📄 TEMPOS (Tool for Evaluating Media Portrayals of Suicide)")
-st.caption("Select a retrieval level below. Then paste or write your text in the text area. The evaluation will be grounded in existing reports carefully assessed by human experts. (For more information on why retrieval level matters, please refer to the sidebar.)")
+st.caption(
+    "Select a retrieval level, paste your text, and we’ll score it with the TEMPOS rubric, "
+    "grounded by similar, human‑coded articles."
+)
 
-# Controls
-k = st.slider("Retrieval Level", 1, 8, 4)
+k = st.slider("Retrieval Level (top‑k)", 1, 8, 4)
 user_input = st.text_area("✍️ Your Text", height=250, placeholder="Write your paragraph here...")
 
 if st.button("Evaluate"):
     if not user_input.strip():
         st.warning("Please enter some text to evaluate.")
-    else:
-        # Retrieve supporting context from Pinecone
-        with st.spinner("Retrieving relevant context from your CSV index..."):
-            context, matches = retrieve_context(user_input, k=k, max_chars=2500)
+        st.stop()
 
-        # Build augmented prompt: your rubric + retrieved context + user text
-        prompt = f"""
+    # Init retrieval engines lazily (so the page is not blank on first load)
+    index, embedder, NAMESPACE = get_clients()
+
+    # Retrieve supporting context from Pinecone
+    with st.spinner("Retrieving relevant context from your CSV index..."):
+        try:
+            context, matches = retrieve_context(index, embedder, NAMESPACE, user_input, k=k, max_chars=2500)
+            exemplar_block = build_exemplar_block(matches, max_examples=3)
+        except Exception as e:
+            st.error(f"Pinecone retrieval error: {e}")
+            st.stop()
+
+    # Build prompt
+    prompt = f"""
 You are a sympathetic and professional expert on mental health journalism.
-Evaluate the user-input text using the TEMPOS criteria. Use the CSV context to ground your evaluation.
-If the CSV context does not contain information for a criterion, say so explicitly. Do not fabricate.
+Score the user-input text using the TEMPOS criteria. When exemplars are provided,
+adhere to their decision boundaries (human-coded labels) and prefer the stricter
+(lower) score when uncertain. Cite phrases from the USER text when justifying.
+
+[EXEMPLARS]
+{exemplar_block or "None available"}
 
 [CSV CONTEXT]
 {context}
@@ -156,81 +225,86 @@ If the CSV context does not contain information for a criterion, say so explicit
     - 1: Doesn't portray suicide as an escape or inevitable response to hardship, but fails to include that suicide is preventable and that resources are available to those who are struggling; may include a mix of these two portrayals.
     - 0: Explicitly presents or strongly implies that suicide is a common, acceptable, or inevitable response to hardship; frames suicide as a way out or a way of taking control of one's circumstances.
 2. Does the report include factual and non-speculative information about suicide?
-    - 2: Includes information that is clearly factual in nature, not speculative. May include quotes or objective information from informed sources (e.g. people or organizations with mental health or suicide prevention expertise, and/or people with lived experience).
-    - 1: Does not include speculation/non-factual information, but also fails to provide factual information about suicide/mental health; may include a mix of these two portrayals.
-    - 0: Includes information that is clearly speculative (e.g., non-factual) about the causes of / reasons for suicide. Sources of information are not informed or are inappropriate.
+    - 2: Includes information that is clearly factual in nature, not speculative. May include quotes or objective information from informed sources.
+    - 1: No speculation, but lacks factual info about suicide/mental health.
+    - 0: Includes speculation or non-factual causes/reasons for suicide; sources are not informed/appropriate.
 3. Does the report use appropriate/non-stigmatizing language?
-    - 2: Uses appropriate/non-stigmatizing language that is neutral and treats suicide similarly to other causes of death (e.g., “died by suicide”).
-    - 1: Uses a mix of inappropriate and appropriate language.
-    - 0: Uses inappropriate / stigmatizing language that implies criminality (e.g., “committed”), judgment, or positive connotations (e.g., “successful attempt”).
+    - 2: Neutral, appropriate language (e.g., “died by suicide”).
+    - 1: Mix of appropriate and inappropriate language.
+    - 0: Stigmatizing language (e.g., “committed”), judgment, or positive connotations.
 4. How does the report describe the suicide method and scene?
-    - 2: Reports the death as a suicide but keeps information general and does not mention method.
-    - 1: Briefly mentions suicide method (e.g., asphyxiation, overdose) but does not include explicit details about the method used or the scene of the death.
-    - 0: Describes or depicts, in a detailed manner, the method and/or location of the suicide; ‘sets the scene’ with details about how the person was found or the object used.
-    - N/A: Article is not about a specific person's suicide.
+    - 2: General, does not mention method.
+    - 1: Briefly mentions method without explicit details or scene.
+    - 0: Detailed description of method and/or scene.
+    - N/A: Not about a specific person's suicide.
 5. How does the report describe the suicide note?
-    - 2: Does not mention a note or its contents; or states that no note was found.
-    - 1: Reports that a note was found but does not include any content from the note.
-    - 0: Shares specific content drawn directly from a suicide note.
-    - N/A: Article is not about a specific person's suicide.
+    - 2: No note or no contents shared.
+    - 1: Note mentioned, contents not shared.
+    - 0: Specific note contents shared.
+    - N/A: Not about a specific person's suicide.
 6. What visual content does the report include?
-    - N/A; our model does not assess visual content. Do not include this in the denominator.
+    - N/A; visual content not assessed. Do not include in denominator.
 7. How does the report describe risk factors and reasons for suicide?
-    - 2: Acknowledges complexity and describes risk factors (e.g., mental illness, economic hardship, family issues).
-    - 1: Does not speculate about reasons for death but does not include information about risk factors.
-    - 0: Oversimplifies or speculates on reasons; attributes the death to a single cause or says it happened ‘without warning’.
+    - 2: Acknowledges complexity; describes risk factors.
+    - 1: Avoids speculation but lacks risk factors.
+    - 0: Oversimplifies/speculates; attributes to a single cause.
 8. Does the report use sensational language?
-    - 2: Uses non-sensational language; focuses on the person’s life rather than death; references best available data when mentioning rates.
-    - 1: Mix of neutral and sensational elements.
-    - 0: Uses shocking or provocative language designed to elicit emotion (e.g., ‘epidemic’, ‘skyrocketing’, ‘spike’).
+    - 2: Non-sensational; focuses on life; uses careful data language.
+    - 1: Mixed neutral/sensational elements.
+    - 0: Shocking/provocative language (e.g., ‘epidemic’, ‘spike’).
 9. Does the report glamorize suicide?
-    - 2: Does not portray suicide positively; focuses on the life lived while acknowledging struggles.
-    - 1: Some idealized or glamorized elements without acknowledging struggles.
-    - 0: Strong glamorization or repeated tributes tying suicide to heroism, romance, or honor.
+    - 2: Does not portray suicide positively; acknowledges struggles.
+    - 1: Some idealization without acknowledging struggles.
+    - 0: Strong glamorization or repeated tributes.
 10. Does the report include suicide prevention and mental health resources?
-    - 2: Includes a crisis number (e.g., 988) AND additional resources (local services, organizations, websites).
-    - 1: Includes some resources but missing key details.
+    - 2: Includes 988 and additional resources (local services, organizations, websites).
+    - 1: Some resources but missing key details.
     - 0: No resources included.
 
 [OUTPUT FORMAT]
-- Provide a numerical score followed by a one‑sentence evaluation for each criterion (1–10).
-- Then, on a new line: "What went well:" with specific examples/phrases from the text that justify positives (if applicable).
-- Then, "Suggestions for improvement:" with concrete, actionable guidance tied to the criteria.
+- Provide a numerical score + one sentence for each criterion (1–10).
+- "What went well:" with quotes from the USER text.
+- "Suggestions for improvement:" with actionable guidance.
+- If evidence is missing for a criterion, output "N/A" and explain briefly.
 """
 
-         
-        # Call GPT with the augmented prompt
-        #   Note: Updating the model might result in changes in parameter constraints 
-        #   (e.g. GPT-5 only accepts a value of 1 for temperature)
-        #   Temperature parameter controls how "creative" or random the GPT model's responses are.
-        #        - 0: deterministic, predictable, consistent
-        #        - 0.5: balance between creativity and reliability
-        #        - 0.7 - 1.0: creative, exploratory, unpredictable (varying results in scores)
-
+    # OpenAI call (with robust error handling)
+    try:
         with st.spinner("Analyzing your report..."):
-            response = client.chat.completions.create(
+            resp = client.chat.completions.create(
                 model="gpt-4",
-                max_completion_tokens=5000,   # cap output
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
+                max_tokens=1200,  # cap output
             )
-            st.session_state["analysis"] = response.choices[0].message.content
+        st.session_state["analysis"] = resp.choices[0].message.content
+    except Exception as e:
+        st.error(f"OpenAI error: {e}")
+        st.stop()
 
-        # Show results and sources
-        if "analysis" in st.session_state:
-            st.markdown("### Feedback")
-            st.markdown(st.session_state["analysis"])
+    # Results & sources
+    if "analysis" in st.session_state:
+        st.markdown("### Feedback")
+        st.markdown(st.session_state["analysis"])
 
-            with st.expander("See retrieved CSV context"):
-                if not matches:
-                    st.write("No context retrieved.")
-                else:
-                    for i, m in enumerate(matches, 1):
-                        meta = m.get("metadata", {})
-                        st.markdown(
-                            f"**Snippet {i}**  •  score: {m.get('score', 0):.4f}  •  row_index: {meta.get('row_index','?')}  •  chunk: {meta.get('chunk_id','?')}"
-                        )
-                        st.code(meta.get("preview", "")[:800])
+        with st.expander("See retrieved CSV context"):
+            if not matches:
+                st.write("No context retrieved.")
+            else:
+                for i, m in enumerate(matches, 1):
+                    meta = m.get("metadata", {}) or {}
+                    st.markdown(
+                        f"**Snippet {i}** • score: {m.get('score', 0):.4f} • "
+                        f"row_index: {meta.get('row_index','?')} • chunk: {meta.get('chunk_id','?')}"
+                    )
+                    if meta.get("title"):
+                        st.write(f"**Title:** {meta['title']}")
+                    if meta.get("link"):
+                        st.markdown(f"[Open Source Link]({meta['link']})")
+                    scores = get_scores_from_meta(meta)
+                    if scores:
+                        st.write("**Human TEMPOS scores:**", scores)
+                    st.code((meta.get("preview") or "")[:800])
 
 # Footer
 st.markdown("---")
@@ -238,7 +312,7 @@ st.markdown(
     """
 ### 🧠 Mental Health Support
 Please reach out to your local mental health service provider or refer to the
-[Substance Abuse and Mental Health Services Adminsitration (SAMHSA)](https://www.samhsa.gov/find-help)
+[Substance Abuse and Mental Health Services Administration (SAMHSA)](https://www.samhsa.gov/find-help)
 for a list of helpful resources.
 
 ---
