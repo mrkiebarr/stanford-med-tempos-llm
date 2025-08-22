@@ -273,9 +273,9 @@ adhere to their decision boundaries (human-coded labels) and prefer the stricter
 
 
     # Results & sources
-    # if "analysis" in st.session_state:
-    #    st.markdown("### Feedback")
-     #   st.markdown(st.session_state["analysis"])
+    if "analysis" in st.session_state:
+        st.markdown("### Feedback")
+        st.markdown(st.session_state["analysis"])
 #
  #       with st.expander("See retrieved CSV context"):
   #          if not matches:
