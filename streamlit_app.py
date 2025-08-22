@@ -243,7 +243,7 @@ adhere to their decision boundaries (human-coded labels) and prefer the stricter
     - 0: Specific note contents shared.
     - N/A: Not about a specific person's suicide.
 6. What visual content does the report include?
-    - N/A; visual content not assessed. Do not include in denominator.
+    - N/A; visual content not assessed. (Include but say 'N/A; visual content not assessed')
 7. How does the report describe risk factors and reasons for suicide?
     - 2: Acknowledges complexity; describes risk factors.
     - 1: Avoids speculation but lacks risk factors.
