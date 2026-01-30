@@ -39,17 +39,15 @@ def init_retrieval_clients():
 def get_clients():
     """Initialize once, on demand, with user-visible status and errors."""
     if "pc_index" not in st.session_state:
-        with st.status("Loading retrieval engines…", expanded=True) as status:
-            try:
-                index, embedder, namespace = init_retrieval_clients()
-                st.session_state["pc_index"] = index
-                st.session_state["embedder"] = embedder
-                st.session_state["namespace"] = namespace
-                
-            except Exception as e:
-                status.update(label="Failed to initialize.", state="error")
-                st.error(f"Setup error: {e}")
-                st.stop()
+        try:
+            index, embedder, namespace = init_retrieval_clients()
+            st.session_state["pc_index"] = index
+            st.session_state["embedder"] = embedder
+            st.session_state["namespace"] = namespace
+            
+        except Exception as e:
+            st.error(f"Setup error: {e}")
+            st.stop()
     return st.session_state["pc_index"], st.session_state["embedder"], st.session_state["namespace"]
 
 # =========================
@@ -119,52 +117,54 @@ def retrieve_context(index, embedder, namespace, query: str, k: int = 5, max_cha
 
 
 # =========================
-# SIDEBAR (INFO)
-# =========================
-with st.sidebar:
-    st.title("TEMPOS Framework")
-    st.write(
-        "TEMPOS, or Tool for Evaluating Media Portrayals of Suicide, helps assess adherence to "
-        "[Recommendations for Reporting on Suicide](https://reportingonsuicide.org/). "
-        "This tool analyzes user text and provides real-time scoring and feedback grounded on human expert-based assessement."
-    )
 
-    st.info(
-        "[Assessment criteria](https://med.stanford.edu/content/dam/sm/psychiatry/documents/initiatives/mediamh/TEMPOS%20Apr23.pdf):\n"
-        "1. How does the report frame the suicide?\n"
-        "2. Does the report include factual and non-speculative information about suicide?\n"
-        "3. Does the report use appropriate/non-stigmatizing language?\n"
-        "4. How does the report describe the suicide method and scene?\n"
-        "5. How does the report describe the suicide note?\n"
-        "6. What visual content does the report include? (N/A in this text-only tool)\n"
-        "7. How does the report describe risk factors and reasons for suicide?\n"
-        "8. Does the report use sensational language?\n"
-        "9. Does the report glamorize suicide?\n"
-        "10. Does the report include suicide prevention and mental health resources?"
-    )
+# with st.sidebar:
+#     st.title("TEMPOS Framework")
+#     st.write(
+#         "TEMPOS, or Tool for Evaluating Media Portrayals of Suicide, helps assess adherence to "
+#         "[Recommendations for Reporting on Suicide](https://reportingonsuicide.org/). "
+#         "This tool analyzes user text and provides real-time scoring and feedback grounded on human expert-based assessement."
+#     )
 
-    st.markdown("---")
-    st.title("TEMPOS Scoring")
-    st.success("2: Helpful messaging, full adherence")
-    st.warning("1: Mixed messaging, partial adherence")
-    st.error("0: Harmful messaging, non-adherence to guidelines")
+#     st.info(
+#         "[Assessment criteria](https://med.stanford.edu/content/dam/sm/psychiatry/documents/initiatives/mediamh/TEMPOS%20Apr23.pdf):\n"
+#         "1. How does the report frame the suicide?\n"
+#         "2. Does the report include factual and non-speculative information about suicide?\n"
+#         "3. Does the report use appropriate/non-stigmatizing language?\n"
+#         "4. How does the report describe the suicide method and scene?\n"
+#         "5. How does the report describe the suicide note?\n"
+#         "6. What visual content does the report include? (N/A in this text-only tool)\n"
+#         "7. How does the report describe risk factors and reasons for suicide?\n"
+#         "8. Does the report use sensational language?\n"
+#         "9. Does the report glamorize suicide?\n"
+#         "10. Does the report include suicide prevention and mental health resources?"
+#     )
+
+#     st.markdown("---")
+#     st.title("TEMPOS Scoring")
+#     st.success("2: Helpful messaging, full adherence")
+#     st.warning("1: Mixed messaging, partial adherence")
+#     st.error("0: Harmful messaging, non-adherence to guidelines")
 
     
-    #st.markdown("---")
-    #st.title("Why Retrieval Level Matters")
-    #st.info("k=1: very focused; may miss context.\n")
-    #st.info("k=3–5: best balance (recommended).")
-    #st.info("k=6+: broader; may add noise and tokens.")
+#     #st.markdown("---")
+#     #st.title("Why Retrieval Level Matters")
+#     #st.info("k=1: very focused; may miss context.\n")
+#     #st.info("k=3–5: best balance (recommended).")
+#     #st.info("k=6+: broader; may add noise and tokens.")
 
-    st.markdown("---")
-    st.subheader("☎️ Suicide and Crisis Lifeline")
-    st.write("- Call/ Text: **988**")
-    st.write("- Chat or more: [988lifeline.org](https://988lifeline.org/)")
-    st.subheader("☎️ Additional Resources")
-    st.write("- [AFSP](https://afsp.org/)")
-    st.write("- [NIMH](https://nimh.nih.gov/)")
-    st.write("- [SPRC](https://sprc.org/)")
-    st.write("- [AAS](https://suicidology.org/)")
+#     st.markdown("---")
+#     st.subheader("☎️ Suicide and Crisis Lifeline")
+#     st.write("- Call/ Text: **988**")
+#     st.write("- Chat or more: [988lifeline.org](https://988lifeline.org/)")
+#     st.subheader("☎️ Additional Resources")
+#     st.write("- [AFSP](https://afsp.org/)")
+#     st.write("- [NIMH](https://nimh.nih.gov/)")
+#     st.write("- [SPRC](https://sprc.org/)")
+#     st.write("- [AAS](https://suicidology.org/)")
+# # SIDEBAR (INFO)
+# =========================
+
 
 # =========================
 # MAIN
